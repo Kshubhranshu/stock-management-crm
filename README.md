@@ -20,14 +20,8 @@
 
 ## ⚙️ Tech Stack
 
-- **Frontend:** [e.g., React.js]  
+- **Frontend:** [e.g., Next.js, Typescript]  
 - **Backend:** [e.g., Node.js / Express]  
-- **Database:** [e.g., PostgreSQL / MongoDB]  
-- **APIs:** Real-time stock data integration (e.g., Alpha Vantage, IEX Cloud)
+- **Database:** [e.g., MongoDB, Redis]  
+- **APIs:** Real-time stock data integration
 
-## 🛠️ Getting Started
-
-### Clone the repository
-
-```bash
-git clone https://github.com/yourusername
