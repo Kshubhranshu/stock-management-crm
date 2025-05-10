@@ -1,0 +1,339 @@
+import React from "react";
+import { HiX, HiPaperAirplane, HiOutlineLightBulb } from "react-icons/hi";
+import { HiChevronDown, HiChevronUp } from "react-icons/hi2";
+import { Line } from "react-chartjs-2";
+import {
+    Chart as ChartJS,
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    Title,
+    Tooltip,
+    Legend,
+} from "chart.js";
+
+ChartJS.register(
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    Title,
+    Tooltip,
+    Legend
+);
+
+const StockAnalysisChat = ({ isOpen, onClose, stockData }) => {
+    const [showAllNews, setShowAllNews] = React.useState(false);
+    const [messages, setMessages] = React.useState([]);
+    const [input, setInput] = React.useState("");
+    const messagesEndRef = React.useRef(null);
+
+    const formatCurrency = (number) => {
+        if (
+            number === 0 ||
+            number === null ||
+            number === undefined ||
+            isNaN(number)
+        ) {
+            return "N/A";
+        }
+        return new Intl.NumberFormat("en-IN", {
+            style: "currency",
+            currency: "INR",
+        }).format(number);
+    };
+
+    const chartData = {
+        labels:
+            stockData?.stockTechnicalData?.map((data) => `${data.days} days`) ||
+            [],
+        datasets: [
+            {
+                label: "BSE Price",
+                data:
+                    stockData?.stockTechnicalData?.map((data) =>
+                        parseFloat(data.bsePrice)
+                    ) || [],
+                borderColor: "rgb(75, 192, 192)",
+                backgroundColor: "rgba(75, 192, 192, 0.5)",
+                tension: 0.4,
+            },
+            {
+                label: "NSE Price",
+                data:
+                    stockData?.stockTechnicalData?.map((data) =>
+                        parseFloat(data.nsePrice)
+                    ) || [],
+                borderColor: "rgb(53, 162, 235)",
+                backgroundColor: "rgba(53, 162, 235, 0.5)",
+                tension: 0.4,
+            },
+        ],
+    };
+
+    const chartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: "top",
+            },
+            title: {
+                display: true,
+                text: "Historical Price Trends",
+            },
+        },
+        scales: {
+            y: {
+                beginAtZero: false,
+                ticks: {
+                    callback: (value) => `₹${value}`,
+                },
+            },
+        },
+    };
+
+    const TechnicalChart = () => (
+        <div className="bg-white rounded-lg p-4 mb-4 shadow-sm">
+            <div className="h-[200px] w-full">
+                <Line options={chartOptions} data={chartData} />
+            </div>
+        </div>
+    );
+
+    const displayedNews = React.useMemo(() => {
+        if (!stockData?.recentNews?.length) return [];
+        return showAllNews
+            ? stockData.recentNews
+            : stockData.recentNews.slice(0, 3);
+    }, [stockData?.recentNews, showAllNews]);
+
+    const NewsSection = () => {
+        if (!stockData?.recentNews?.length) {
+            return null;
+        }
+
+        return (
+            <div className="bg-white rounded-lg p-4 mb-4 shadow-sm">
+                <h3 className="text-lg font-medium text-gray-900 mb-3">
+                    Recent News
+                </h3>
+                <div className="space-y-3">
+                    {displayedNews.map((news, index) => (
+                        <div
+                            key={index}
+                            className="border-b border-gray-100 last:border-0 pb-3 last:pb-0"
+                        >
+                            <p className="text-sm text-gray-600 mb-1">
+                                {news?.date}
+                            </p>
+                            <p className="text-sm text-gray-800 mb-2">
+                                {news?.intro}
+                            </p>
+                            <a
+                                href={news?.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm text-blue-600 hover:text-blue-800 transition-colors"
+                            >
+                                Read more →
+                            </a>
+                        </div>
+                    ))}
+                </div>
+                {stockData?.recentNews?.length > 3 && (
+                    <button
+                        onClick={() => setShowAllNews((prev) => !prev)}
+                        className="mt-3 flex items-center text-sm text-gray-600 hover:text-gray-800 transition-colors"
+                    >
+                        {showAllNews ? (
+                            <>
+                                <HiChevronUp className="w-4 h-4 mr-1" />
+                                Show less
+                            </>
+                        ) : (
+                            <>
+                                <HiChevronDown className="w-4 h-4 mr-1" />
+                                Show all {stockData.recentNews.length} news
+                            </>
+                        )}
+                    </button>
+                )}
+            </div>
+        );
+    };
+
+    React.useEffect(() => {
+        setMessages([
+            {
+                type: "system",
+                content: `Welcome! I'm your AI assistant for analyzing ${
+                    stockData?.stockName || stockData?.name
+                }. Here's a summary of the stock:
+                
+• Sector: ${stockData?.sector || "N/A"}
+• Stock Code: ${stockData?.stockCode || "N/A"}
+• Purchase Price: ${formatCurrency(stockData?.purchasePrice)}
+• Current Price: ${formatCurrency(stockData?.currentPrice)}
+• Quantity: ${stockData?.quantity || "N/A"}
+• Total Investment: ${formatCurrency(stockData?.investment)}
+• Present Value: ${formatCurrency(stockData?.presentValue)}
+• Gain/Loss: ${formatCurrency(stockData?.gainLoss)}
+• P/E Ratio: ${stockData?.peRatio || "N/A"}
+
+What would you like to know about this stock?`,
+            },
+            {
+                type: "chart",
+                content: <TechnicalChart />,
+            },
+            {
+                type: "news",
+                content: <NewsSection />,
+            },
+        ]);
+    }, [stockData, showAllNews]);
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
+    React.useEffect(() => {
+        scrollToBottom();
+    }, [messages]);
+
+    const handleSendMessage = (e) => {
+        e.preventDefault();
+        if (!input.trim()) return;
+
+        setMessages((prev) => [...prev, { type: "user", content: input }]);
+
+        setTimeout(() => {
+            setMessages((prev) => [
+                ...prev,
+                {
+                    type: "system",
+                    content: `Here's an analysis for ${
+                        stockData?.stockName || stockData?.name
+                    } (${stockData?.stockCode}) based on your query: "${input}"
+
+Based on the available data:
+• Current P/E Ratio: ${stockData?.peRatio || "N/A"}
+• Investment Value: ${formatCurrency(stockData?.investment)}
+• Current Market Value: ${formatCurrency(stockData?.presentValue)}
+• Performance: ${
+                        stockData?.gainLoss >= 0 ? "Positive" : "Negative"
+                    } (${formatCurrency(stockData?.gainLoss)})
+
+This feature is currently under development and will be available soon. Stay tuned for AI-powered stock analysis!`,
+                },
+            ]);
+        }, 1000);
+
+        setInput("");
+    };
+
+    return (
+        <>
+            {/* Backdrop */}
+            {isOpen && (
+                <div
+                    className="fixed inset-0 bg-black/10 transition-opacity z-40"
+                    onClick={onClose}
+                />
+            )}
+
+            {/* Chat Panel */}
+            <div
+                className={`fixed inset-y-0 right-0 w-[448px] bg-white shadow-2xl transform transition-transform duration-300 ease-in-out z-50 flex flex-col ${
+                    isOpen ? "translate-x-0" : "translate-x-full"
+                }`}
+            >
+                {/* Header */}
+                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                    <div>
+                        <h3 className="text-lg font-medium text-gray-900">
+                            {stockData?.stockName || stockData?.name}
+                            <span className="text-sm text-gray-500 ml-2">
+                                ({stockData?.stockCode})
+                            </span>
+                        </h3>
+                        <p className="text-sm text-gray-500 mt-0.5">
+                            {stockData?.sector} - AI Stock Analysis
+                        </p>
+                    </div>
+                    <button
+                        onClick={onClose}
+                        className="p-2 text-gray-400 hover:text-gray-500 rounded-full hover:bg-gray-100 transition-all"
+                    >
+                        <HiX className="w-5 h-5" />
+                    </button>
+                </div>
+
+                {/* Messages */}
+                <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+                    {messages.map((message, index) => (
+                        <div
+                            key={index}
+                            className={`flex ${
+                                message.type === "user"
+                                    ? "justify-end"
+                                    : "justify-start"
+                            } items-end space-x-2`}
+                        >
+                            {message.type === "system" && (
+                                <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                                    <HiOutlineLightBulb className="w-4 h-4 text-indigo-600" />
+                                </div>
+                            )}
+                            <div
+                                className={`${
+                                    message.type === "chart"
+                                        ? "w-full"
+                                        : "max-w-[80%] rounded-lg px-4 py-2.5 " +
+                                          (message.type === "user"
+                                              ? "bg-indigo-600 text-white"
+                                              : "bg-gray-50 text-gray-800")
+                                }`}
+                            >
+                                {typeof message.content === "string" ? (
+                                    <p className="text-sm leading-relaxed whitespace-pre-line">
+                                        {message.content}
+                                    </p>
+                                ) : (
+                                    message.content
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                    <div ref={messagesEndRef} />
+                </div>
+
+                {/* Input Form */}
+                <div className="border-t border-gray-100 px-6 py-4">
+                    <form
+                        onSubmit={handleSendMessage}
+                        className="flex items-center space-x-4"
+                    >
+                        <input
+                            type="text"
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            placeholder="Ask about this stock..."
+                            className="flex-1 min-w-0 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-400 focus:ring-0 hover:border-gray-300 transition-all"
+                        />
+                        <button
+                            type="submit"
+                            className="inline-flex items-center justify-center rounded-lg bg-gray-900 p-2.5 text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2 transition-all"
+                        >
+                            <HiPaperAirplane className="w-5 h-5 transform rotate-90" />
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </>
+    );
+};
+
+export default StockAnalysisChat;
