@@ -1,4 +1,4 @@
-# Client-8Sapience
+# 8Sapience
 
 **8Sapience** is a custom-built Stock Management CRM developed for a client to streamline the management of their enterprise clients’ stock portfolios. The platform enables efficient stock tracking and displays real-time market data.
 
