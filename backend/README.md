@@ -13,6 +13,7 @@ A production-ready Express.js backend server with security, logging, error handl
 -   ✅ Rate limiting & crash handling
 -   ✅ Request validation
 -   ✅ Graceful shutdown
+-   ✅ Caching
 
 ## Prerequisites
 
